@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Password Strength Checker</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="container">
+    <h2>🔐 Password Strength Checker</h2>
+
+    <form method="POST" action="/predict">
+      <input type="text" name="password" id="inputPassword" placeholder="Enter password" required>
+      <ul id="checklist">
+        <li id="length">❌ Minimal 8 karakter</li>
+        <li id="upper">❌ Huruf besar (A-Z)</li>
+        <li id="lower">❌ Huruf kecil (a-z)</li>
+        <li id="number">❌ Angka (0-9)</li>
+        <li id="symbol">❌ Simbol (!@#$...)</li>
+      </ul>
+      <button type="submit">Check</button>
+    </form>
+
+    {% if result %}
+      <div class="result {{ result|lower }}">
+        Password "<strong>{{ password }}</strong>" is <strong>{{ result }}</strong>
+      </div>
+    {% endif %}
+
+    <hr style="margin: 30px 0; border-color: #00ffc6;">
+
+    <h3>Bingung buat password?</h3>
+    <button onclick="generatePassword()">🔄 Generate Password Kuat</button>
+    <input type="text" id="generatedPassword" readonly>
+
+    <div class="action-buttons">
+      <button onclick="copyPassword()">📋 Copy</button>
+      <button onclick="insertToInput()">⬇ Masukkan ke Atas</button>
+    </div>
+  </div>
+
+  <script>
+    function generatePassword() {
+      fetch('/generate')
+        .then(response => response.json())
+        .then(data => {
+          const genField = document.getElementById('generatedPassword');
+          if (data.generated_password) {
+            genField.value = data.generated_password;
+          } else {
+            genField.value = "Gagal generate password.";
+          }
+        });
+    }
+
+    function copyPassword() {
+      const genField = document.getElementById('generatedPassword');
+      if (!genField.value) return alert("Belum ada password.");
+      navigator.clipboard.writeText(genField.value)
+        .then(() => alert("✅ Password berhasil disalin!"))
+        .catch(() => alert("❌ Gagal menyalin password."));
+    }
+
+    function insertToInput() {
+      const genField = document.getElementById('generatedPassword').value;
+      if (!genField) return alert("Belum ada password.");
+      document.getElementById('inputPassword').value = genField;
+    }
+
+    // Real-time checklist
+    document.getElementById("inputPassword").addEventListener("input", function () {
+      const val = this.value;
+
+      const checks = {
+        length: val.length >= 8,
+        upper: /[A-Z]/.test(val),
+        lower: /[a-z]/.test(val),
+        number: /[0-9]/.test(val),
+        symbol: /[^A-Za-z0-9]/.test(val)
+      };
+
+      for (const key in checks) {
+        const item = document.getElementById(key);
+        item.innerText = `${checks[key] ? "✅" : "❌"} ${item.textContent.slice(2)}`;
+        item.style.color = checks[key] ? "#00ffc6" : "#ccc";
+      }
+    });
+  </script>
+</body>
+</html>
